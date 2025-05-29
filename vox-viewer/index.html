@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOX 3D Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .viewer-container {
+            flex: 1;
+            position: relative;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s;
+            font-weight: 500;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .info-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .instructions {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #0066cc;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>VOX Viewer</h1>
+
+            <div class="file-input-wrapper">
+                <input type="file" id="file-input" class="file-input" accept=".vox">
+                <label for="file-input" class="file-input-label">
+                    📁 Choose .vox file
+                </label>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label for="voxel-size">Voxel Size: <span id="voxel-size-value">1.0</span></label>
+                    <input type="range" id="voxel-size" class="slider" min="0.1" max="3.0" step="0.1" value="1.0">
+                </div>
+            </div>
+
+            <div class="info-panel" id="info-panel" style="display: none;">
+                <h3>Model Info</h3>
+                <div class="info-item">
+                    <span class="info-label">Dimensions:</span>
+                    <span class="info-value" id="dimensions">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Voxels:</span>
+                    <span class="info-value" id="voxel-count">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Colors:</span>
+                    <span class="info-value" id="color-count">-</span>
+                </div>
+            </div>
+
+            <div id="error-panel"></div>
+
+            <div class="instructions">
+                <h3>Controls</h3>
+                <ul>
+                    <li><strong>Rotate:</strong> Left click + drag</li>
+                    <li><strong>Zoom:</strong> Mouse wheel</li>
+                    <li><strong>Pan:</strong> Right click + drag</li>
+                </ul>
+
+                <h3 style="margin-top: 15px;">About</h3>
+                <p>This viewer supports MagicaVoxel .vox files</p>
+            </div>
+        </div>
+
+        <div class="viewer-container" id="viewer-container">
+            <div class="loading" id="loading">
+                Load a .vox file to start viewing
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script src="vox-parser.js"></script>
+    <script src="vox-viewer.js"></script>
+
+    <script>
+        class VoxViewerApp {
+            constructor() {
+                this.viewer = null;
+                this.parser = new VoxParser();
+                this.currentVoxData = null;
+
+                this.initializeUI();
+                this.setupEventListeners();
+            }
+
+            initializeUI() {
+                const container = document.getElementById('viewer-container');
+                this.viewer = new VoxViewer(container);
+            }
+
+            setupEventListeners() {
+                document.getElementById('file-input').addEventListener('change', (e) => {
+                    this.handleFileLoad(e.target.files[0]);
+                });
+
+                const voxelSizeSlider = document.getElementById('voxel-size');
+                const voxelSizeValue = document.getElementById('voxel-size-value');
+
+                voxelSizeSlider.addEventListener('input', (e) => {
+                    const size = parseFloat(e.target.value);
+                    voxelSizeValue.textContent = size.toFixed(1);
+                    if (this.viewer) {
+                        this.viewer.setVoxelSize(size);
+                        if (this.currentVoxData) {
+                            this.viewer.loadVoxelData(this.currentVoxData);
+                        }
+                    }
+                });
+            }
+
+            async handleFileLoad(file) {
+                if (!file) return;
+
+                this.showLoading('Parsing .vox file...');
+                this.clearError();
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    this.currentVoxData = this.parser.parse(arrayBuffer);
+
+                    this.showLoading('Rendering voxels...');
+
+                    setTimeout(() => {
+                        this.viewer.setCurrentVoxData(this.currentVoxData);
+                        this.viewer.loadVoxelData(this.currentVoxData);
+                        this.updateInfoPanel();
+                        this.hideLoading();
+                    }, 100);
+
+                } catch (error) {
+                    this.hideLoading();
+                    this.showError(`Failed to load file: ${error.message}`);
+                    console.error('Error loading vox file:', error);
+                }
+            }
+
+            updateInfoPanel() {
+                if (!this.currentVoxData || !this.currentVoxData.models.length) return;
+
+                const model = this.currentVoxData.models[0];
+                const uniqueColors = new Set(model.voxels.map(v => v.colorIndex)).size;
+
+                document.getElementById('dimensions').textContent =
+                    `${model.size.x} × ${model.size.y} × ${model.size.z}`;
+                document.getElementById('voxel-count').textContent =
+                    model.voxels.length.toLocaleString();
+                document.getElementById('color-count').textContent = uniqueColors;
+
+                document.getElementById('info-panel').style.display = 'block';
+            }
+
+            showLoading(message) {
+                const loading = document.getElementById('loading');
+                loading.textContent = message;
+                loading.style.display = 'block';
+            }
+
+            hideLoading() {
+                document.getElementById('loading').style.display = 'none';
+            }
+
+            showError(message) {
+                const errorPanel = document.getElementById('error-panel');
+                errorPanel.innerHTML = `<div class="error">${message}</div>`;
+            }
+
+            clearError() {
+                document.getElementById('error-panel').innerHTML = '';
+            }
+        }
+
+        new VoxViewerApp();
+    </script>
+</body>
+</html>

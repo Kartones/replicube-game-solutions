@@ -20,6 +20,8 @@ Notes:
 
 Some personal projects, exported in `.vox` format, compatible with the [MagicaVoxel](https://ephtracy.github.io/) tool (from where the higher quality renders come from).
 
+You can view the Voxel 3D models using [this online viewer](https://kartones.net/demos/033/): 
+
 ![](my-sandbox-projects/zelda-link-1.png)
 ![](my-sandbox-projects/zelda-link-2.png)
 ![](my-sandbox-projects/zelda-link-1-render.png)
