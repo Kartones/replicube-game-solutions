@@ -4,7 +4,7 @@
 
 Solutions to puzzles/challenges from the videogame [Replicube](https://store.steampowered.com/app/3401490/Replicube/), which you code in Lua.
 
-Generally optimizing for code size, not for cycles, but not going crazy either. When I finish all the puzzles I might try to go for more insane optimizations.
+Generally optimizing for code size, not for cycles, but not going crazy either. When I finish all the puzzles I might try to go for more insane optimizations. I'm keeping my optimization and "coding techniques" [in this file](coding.md).
 
 
 ![](tutorial-projects/7-importance-of-end.png)
